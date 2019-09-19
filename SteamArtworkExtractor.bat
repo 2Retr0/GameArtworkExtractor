@@ -39,21 +39,21 @@ if not defined layoutstate echo what? & goto type
 rem Download game cover from SteamDB
 curl https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_600x900_2x.jpg -o "%_inputname% cover".jpg
 echo . . .
-echo Done! Downloaded %_inputname%_cover.jpg
+echo Done! Downloaded %_inputname% cover.jpg
 goto complete
 
 :background
 rem Download background from SteamDB
 curl https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_hero.jpg -o "%_inputname% background".jpg
 echo . . .
-echo Done! Downloaded %_inputname%_background.jpg
+echo Done! Downloaded %_inputname% background.jpg
 goto complete
 
 :logo
 rem Download logo from SteamDB
 curl https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png -o "%_inputname% logo".jpg
 echo . . .
-echo Done! Downloaded %_inputname%_logo.jpg
+echo Done! Downloaded %_inputname% logo.jpg
 goto complete 
 
 rem Restart
