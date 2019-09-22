@@ -4,25 +4,25 @@ set gameidline=0
 set gameidlinedata=
 set gameid=0
 echo . . .
-echo Search a Steam game title! (or type 'manual' for ID input)
+echo Search a Steam game title! Make sure to spell it correctly! (or type 'manual' for ID input)
 
 rem Input search and get the respective HTML Steam page
 set /p _inputname=^> 
 if /i "%_inputname%" equ "exit" exit
 if /i "%_inputname%" equ "manual" goto manualsearch else goto namedsearch
 
+rem Find and extract Steam game ID
 :namedsearch
 set webinput=%_inputname: =+%
 wget --output-document %webinput%.txt https://store.steampowered.com/search/?term=%webinput%
 
-rem Find and extract Steam game ID
 echo Finding ID...
 findstr /n /c:"<!-- List Items -->" %webinput%.txt >> linetemp.txt
 powershell -c "$(sls '[0-9]+' linetemp.txt -allm).Matches.Value" > linetemp2.txt
-for /F "delims=|" %%f in (linetemp2.txt) do set /a gameidline=%gameidline%+%%f
+for /f "delims=|" %%f in (linetemp2.txt) do set /a gameidline=%gameidline%+%%f
 del linetemp.txt
 del linetemp2.txt
-for /F "skip=%gameidline% delims=" %%p in (%webinput%.txt) do (set gameidlinedata="%%p" & goto break)
+for /f "skip=%gameidline% delims=" %%p in (%webinput%.txt) do (set gameidlinedata="%%p" & goto break)
 :break
 for /f "tokens=1-20 delims=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ/" %%a in ("%gameidlinedata:~45,15%") do set gameid=%%a%%b%%c%%d%%e%%f%%g%%h%%i%%j%%k%%l%%m%%n%%o
 echo ID is %gameid%!
