@@ -126,7 +126,6 @@ echo SteamArtworkExtractor by me!
 :logo
     :: download the webpage for the logo image
     wget -q --output-document %webinput%logo.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png
-    :: if the size of the page is 0kb, the image does not exist
     for /f %%i in ("%webinput%logo.txt") do set size=%%~zi
     if %size% equ 0 (
         del %webinput%logo.txt
