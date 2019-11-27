@@ -1,14 +1,13 @@
 @echo off
 :: we need to change the active code page to UTF-8 to allow for uncommon cases of special characters in game titles
-chcp 65001
-echo .
+chcp 65001 > nul 2>&1
 echo SteamArtworkExtractor by me!
 
 :start
     echo . . .
     echo Search a Steam game title! (or type 'manual' for ID input)
 
-    :: choose what search input should be used
+    :: choose what type of search input should be used
     set /p _inputname=^> 
     if /i "%_inputname%" equ "exit" exit
     if /i "%_inputname%" equ "manual" goto manualsearch else goto namedsearch
@@ -39,6 +38,8 @@ echo SteamArtworkExtractor by me!
     :break2
     :: remove colons from game titles as they cannot be used in a filename
     set gametitle=%gametitle::=%
+    :: remove trailing space character from game title
+    set gametitle=%gametitle:~0,-1%
 
     :: gameid
     :: find the line number that has the game id within the downloaded webpage txt file
@@ -47,10 +48,11 @@ echo SteamArtworkExtractor by me!
     for /f "skip=%gameidloc% tokens=4 delims=/" %%i in (%webinput%.txt) do set /a gameid=%%i & goto break3
     :break3
     del %webinput%.txt
-    echo ID for %gametitle%is %gameid%!
+    echo ID for %gametitle% is %gameid%!
     goto format
 
 :manualsearch
+    set inputcheck=
     echo . . .
     echo Manual mode!
     echo Enter a Steam game ID or type 'exit' to restart...
@@ -64,8 +66,8 @@ echo SteamArtworkExtractor by me!
     wget -q --output-document %_inputid%.txt https://store.steampowered.com/app/%_inputid%/
     :: check if the downloaded file is larger than 250kb in size
     :: if it is, we most likely downloaded the steam store front page meaning a steam store page with the inputted id most likely does not exist
-    for /f %%i in ("%_inputid%.txt") do set size=%%~zi
-    if %size% gtr 250 (
+    for %%i in ("%_inputid%.txt") do set size=%%~zi
+    if %size% gtr 250000 (
         del %_inputid%.txt
         echo Could not find a game with ID %_inputid%! :/
         goto manualsearch
@@ -75,6 +77,8 @@ echo SteamArtworkExtractor by me!
     :: isolate the game title from the line
     for /f "skip=%gametitleloc% tokens=3 delims=<>" %%i in (%_inputid%.txt) do set gametitle=%%i & goto break4
     :break4
+    :: remove trailing space character from game title
+    set gametitle=%gametitle:~0,-1%
     del %_inputid%.txt
     echo Found %gametitle%!
     set gameid=%_inputid%
@@ -94,7 +98,7 @@ echo SteamArtworkExtractor by me!
     :: download the webpage for the cover image
     wget -q --output-document %webinput%cover.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_600x900_2x.jpg
     :: if the size of the page is 0kb, the image does not exist
-    for /f %%i in ("%webinput%cover.txt") do set size=%%~zi
+    for %%i in ("%webinput%cover.txt") do set size=%%~zi
     if %size% equ 0 (
         del %webinput%cover.txt
         echo This game doesn't appear to have a cover image :/
@@ -103,14 +107,14 @@ echo SteamArtworkExtractor by me!
     del %webinput%cover.txt
     
     :: download game cover from steam
-    curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_600x900_2x.jpg -o "%gametitle%cover".jpg
-    echo Downloaded %gametitle%cover.jpg!
+    curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_600x900_2x.jpg -o "cover_%gametitle%".jpg
+    echo Downloaded cover_%gametitle%.jpg!
     goto start
 
 :background
     :: download the webpage for the background image
     wget -q --output-document %webinput%bg.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_hero.jpg
-    for /f %%i in ("%webinput%bg.txt") do set size=%%~zi
+    for %%i in ("%webinput%bg.txt") do set size=%%~zi
     if %size% equ 0 (
         del %webinput%bg.txt
         echo This game doesn't appear to have a background image :/
@@ -119,14 +123,14 @@ echo SteamArtworkExtractor by me!
     del %webinput%bg.txt
     
     :: download background from steam
-    curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_hero.jpg -o "%gametitle%background".jpg
-    echo Downloaded %gametitle%background.jpg!
+    curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_hero.jpg -o "bg_%gametitle%".jpg
+    echo Downloaded bg_%gametitle%.jpg!
     goto start
 
 :logo
     :: download the webpage for the logo image
     wget -q --output-document %webinput%logo.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png
-    for /f %%i in ("%webinput%logo.txt") do set size=%%~zi
+    for %%i in ("%webinput%logo.txt") do set size=%%~zi
     if %size% equ 0 (
         del %webinput%logo.txt
         echo This game doesn't appear to have a logo image :/
@@ -135,6 +139,6 @@ echo SteamArtworkExtractor by me!
     del %webinput%logo.txt
     
     :: download logo from steam
-    curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png -o "%gametitle%logo".jpg
-    echo Downloaded %gametitle%logo.jpg!
+    curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png -o "logo_%gametitle%".jpg
+    echo Downloaded logo_%gametitle%.jpg!
     goto start
