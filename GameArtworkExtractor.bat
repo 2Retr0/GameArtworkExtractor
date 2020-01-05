@@ -20,7 +20,7 @@ cd ..
 
 :start
     echo . . .
-    echo Which platform to extract art? (steam/twitch)
+    echo Choose a platform to extract game art! (steam/twitch)
     :: choose what type of platform should be used
     set /p _inputplatform=^> 
     if /i "%_inputplatform%" equ "exit" exit
