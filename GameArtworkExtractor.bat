@@ -1,7 +1,7 @@
 @echo off
 :: we need to change the active code page to UTF-8 to allow for uncommon cases of special characters in game titles
 chcp 65001 > nul 2>&1
-echo SteamArtworkExtractor by me!
+echo GameArtworkExtractor by 2Retr0!
 
 :: set up requesies folder and download prerequesites
 if not exist requesites (mkdir requesites)
