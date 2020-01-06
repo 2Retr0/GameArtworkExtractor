@@ -38,35 +38,35 @@ cd ..
     cd requesites
     :: search for the game using the twitch dev API
     :: since the command will output into a single line, we need to pipe it using jq.exe to format the JSON correctly into a text file
-    curl -s -H "Accept:application/vnd.twitchtv.v5+json" -H "Client-ID:b9ocq1yvlok4fh77ftqa6d5nk1tk7x" -X GET "https://api.twitch.tv/kraken/search/games?query=%_webinput%" | jq "" > %~dp0/%_inputname: =+%.txt
+    curl -s -H "Accept:application/vnd.twitchtv.v5+json" -H "Client-ID:b9ocq1yvlok4fh77ftqa6d5nk1tk7x" -X GET "https://api.twitch.tv/kraken/search/games?query=%_webinput%" | jq "" > %~dp0/query.txt
     endlocal
     :: check if a game is found, if not goto twitchsearch
-    findstr /m ""games": null" %_inputname: =+%.txt > nul
+    findstr /m ""games": null" query.txt > nul
     if %errorlevel%==0 (
-        del %_inputname: =+%.txt
+        del query.txt
         echo Couldn't find a game :/
         goto twitchsearch
     )
 
     :: extract the leading game title from the text file we created
-    for /f "skip=19 delims=" %%i in (%_inputname: =+%.txt) do set gametitle=%%i & goto twitchbreak1
+    for /f "skip=19 delims=" %%i in (query.txt) do set gametitle=%%i & goto twitchbreak1
     :twitchbreak1
     set gametitle=%gametitle:~25,-3%
     echo Found %gametitle%!
 
     :: extract the generic URL for the game's cover
     :: even if it doesn't exist, we will still copy it for now
-    for /f "skip=11 delims=" %%i in (%_inputname: =+%.txt) do set gamecoverurl=%%i & goto twitchbreak2
+    for /f "skip=11 delims=" %%i in (query.txt) do set gamecoverurl=%%i & goto twitchbreak2
     :twitchbreak2
     :: substring the URL and append a high resolution format
     set gamecoverurl=%gamecoverurl:~21,-22%1440x1920.jpg
 
     :: extract the generic URL for the game's logo 
-    for /f "skip=17 delims=" %%i in (%_inputname: =+%.txt) do set gamelogourl=%%i & goto twitchbreak3
+    for /f "skip=17 delims=" %%i in (query.txt) do set gamelogourl=%%i & goto twitchbreak3
     :twitchbreak3
     :: substring the URL and append a high resolution format
     set gamelogourl=%gamelogourl:~21,-22%2400x1440.jpg
-    del %_inputname: =+%.txt
+    del query.txt
     goto twitchformat
 
 :twitchformat
