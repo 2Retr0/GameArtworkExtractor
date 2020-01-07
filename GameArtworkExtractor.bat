@@ -1,22 +1,35 @@
 @echo off
 :: we need to change the active code page to UTF-8 to allow for uncommon cases of special characters in game titles
 chcp 65001 > nul 2>&1
-echo GameArtworkExtractor by 2Retr0!
 
 :: set up requesies folder and download prerequesites
+set download=0
 if not exist requesites (mkdir requesites)
 cd requesites
-if not exist wget.exe (
-    echo Downloading wget...
-    curl -s https://eternallybored.org/misc/wget/1.20.3/64/wget.exe -o wget.exe
+if not exist cecho.exe (
+     <nul set /p ="Downloading cecho..."
+    curl -s -L https://www.dropbox.com/s/8qt3tiidjtes685/cecho.exe?dl=1 -o cecho.exe
     if errorlevel 1 goto downloadfail
+    echo done!
+    set download=1
 )
 if not exist jq.exe (
-    echo Downloading jq...
+    <nul set /p ="Downloading jq..."
     curl -s -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe -o jq.exe
     if errorlevel 1 goto downloadfail
+    echo done!
+    set download=1
+)
+if not exist wget.exe (
+    <nul set /p ="Downloading wget..."
+    curl -s https://eternallybored.org/misc/wget/1.20.3/64/wget.exe -o wget.exe
+    if errorlevel 1 goto downloadfail
+    echo done!
+    set download=1
 )
 cd ..
+if %download%==1 echo.
+%~dp0/requesites/cecho {0D}GameArtworkExtractor{#} by u/2Retr0{\n}
 
 :start
     echo . . .
@@ -37,7 +50,7 @@ cd ..
     set "_webinput=!_inputname: =%%20!"
     cd requesites
     :: search for the game using the twitch dev API
-    :: since the command will output into a single line, we need to pipe it using jq.exe to format the JSON correctly into a text file
+    :: since the command will output into a single line, we need to pipe it using jq to format the JSON correctly into a text file
     curl -s -H "Accept:application/vnd.twitchtv.v5+json" -H "Client-ID:b9ocq1yvlok4fh77ftqa6d5nk1tk7x" -X GET "https://api.twitch.tv/kraken/search/games?query=%_webinput%" | jq "" > %~dp0/query.txt
     endlocal
     :: check if a game is found, if not goto twitchsearch
@@ -52,7 +65,9 @@ cd ..
     for /f "skip=19 delims=" %%i in (query.txt) do set gametitle=%%i & goto twitchbreak1
     :twitchbreak1
     set gametitle=%gametitle:~25,-3%
-    echo Found %gametitle%!
+    %~dp0/requesites/cecho Found {03}%gametitle%{#}!{\n}
+    :: remove colons from game titles as they cannot be used in a filename
+    set gametitle=%gametitle::=%
 
     :: extract the generic URL for the game's cover
     :: even if it doesn't exist, we will still copy it for now
@@ -82,14 +97,14 @@ cd ..
 :twitchcover
     :: download the game cover image
     curl -s %gamecoverurl% -o "twitchcover_%gametitle%".jpg
-    :: if it does not exist, the size of the file should be less than 150b, and from this, we can determine that a cover does not exist
+    :: if it does not exist, the size of the file should be less than 150 bytes, and from this, we can determine that a cover does not exist
     for %%i in ("twitchcover_%gametitle%.jpg") do set size=%%~zi
     if %size% lss 150 (
         del "twitchcover_%gametitle%.jpg"
         echo This game doesn't appear to have a cover image :/
-        goto start
+        goto twitchformat
     )
-    echo Downloaded twitchcover_%gametitle%.jpg!
+    %~dp0/requesites/cecho {0A}Downloaded cover as twitchcover_%gametitle%.jpg!{#}{\n}
     goto start
 
 :twitchlogo
@@ -100,9 +115,9 @@ cd ..
     if %size% lss 150 (
         del "twitchlogo_%gametitle%.jpg"
         echo This game doesn't appear to have a logo image :/
-        goto start
+        goto twitchformat
     )
-    echo Downloaded twitchlogo_%gametitle%.jpg!
+    %~dp0/requesites/cecho {0A}Downloaded logo as twitchlogo_%gametitle%.jpg!{#}{\n}
     goto start
 
 :steamstart
@@ -119,9 +134,7 @@ cd ..
     :: replace all spaces in inputted name with plus signs for input into the steam store serach engine
     set webinput=%_inputname: =+%
     :: download the steam search webpage as a txt file with the inputted name as the search
-    cd requesites
-    wget -q --output-document %~dp0/%webinput%.txt https://store.steampowered.com/search/?term=%webinput%
-    cd ..
+    %~dp0/requesites/wget -q --output-document %~dp0/%webinput%.txt https://store.steampowered.com/search/?term=%webinput%
     
     :: check for a specific string that determines if the search returned nothing
     findstr /c:"0 results match your search." %webinput%.txt > nul 2>&1
@@ -146,13 +159,13 @@ cd ..
     set gametitle=%gametitle:~0,-1%
 
     :: gameid
-    :: find the line number that has the game id within the downloaded webpage txt file
+    :: find the line number that has the game ID within the downloaded webpage txt file
     for /f "tokens=1 delims=:" %%i in ('findstr /n /c:"<!-- List Items -->" %webinput%.txt') do set /a gameidloc=%%i
-    :: isolate the game id from the line
+    :: isolate the game ID from the line
     for /f "skip=%gameidloc% tokens=4 delims=/" %%i in (%webinput%.txt) do set /a gameid=%%i & goto steambreak3
     :steambreak3
     del %webinput%.txt
-    echo ID for %gametitle% is %gameid%!
+    %~dp0/requesites/cecho ID for {03}%gametitle% {#}is %gameid%!{\n}
     goto steamformat
 
 :steammanualsearch
@@ -166,12 +179,10 @@ cd ..
     for /f "delims=0123456789" %%i in ("%_inputid%") do set inputcheck=%%i
     if defined inputcheck echo %_inputid% is not numeric! & goto steammanualsearch
 
-    :: download steam store webpage with the inputted id
-    cd requesites
-    wget -q --output-document %~dp0/%_inputid%.txt https://store.steampowered.com/app/%_inputid%/
-    cd ..
+    :: download steam store webpage with the inputted ID
+    %~dp0/requesites/wget -q --output-document %~dp0/%_inputid%.txt https://store.steampowered.com/app/%_inputid%/
     :: check if the downloaded file is larger than 250kb in size
-    :: if it is, we most likely downloaded the steam store front page meaning a steam store page with the inputted id most likely does not exist
+    :: if it is, we most likely downloaded the steam store front page meaning a steam store page with the inputted ID most likely does not exist
     for %%i in ("%_inputid%.txt") do set size=%%~zi
     if %size% gtr 250000 (
         del %_inputid%.txt
@@ -202,57 +213,51 @@ cd ..
 
 :steamcover
     :: download the webpage for the cover image
-    cd requesites
-    wget -q --output-document %~dp0/%webinput%cover.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_600x900_2x.jpg
-    cd ..
+    %~dp0/requesites/wget -q --output-document %~dp0/%webinput%cover.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_600x900_2x.jpg
     :: if the size of the page is 0kb, the image does not exist
     for %%i in ("%webinput%cover.txt") do set size=%%~zi
     if %size% equ 0 (
         del %webinput%cover.txt
         echo This game doesn't appear to have a cover image :/
-        goto start
+        goto steamformat
     )
     del %webinput%cover.txt
     
     :: download game cover from steam
     curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_600x900_2x.jpg -o "steamcover_%gametitle%".jpg
-    echo Downloaded steamcover_%gametitle%.jpg!
+    %~dp0/requesites/cecho {0A}Downloaded cover as steamcover_%gametitle%.jpg!{#}{\n}
     goto start
 
 :steambackground
     :: download the webpage for the background image
-    cd requesites
-    wget -q --output-document %~dp0/%webinput%bg.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_hero.jpg
-    cd ..
+    %~dp0/requesites/wget -q --output-document %~dp0/%webinput%bg.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_hero.jpg
     for %%i in ("%webinput%bg.txt") do set size=%%~zi
     if %size% equ 0 (
         del %webinput%bg.txt
         echo This game doesn't appear to have a background image :/
-        goto start
+        goto steamformat
     )
     del %webinput%bg.txt
     
     :: download background from steam
     curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/library_hero.jpg -o "steambg_%gametitle%".jpg
-    echo Downloaded steambg_%gametitle%.jpg!
+    %~dp0/requesites/cecho {0A}Downloaded background as steambg_%gametitle%.jpg!{#}{\n}
     goto start
 
 :steamlogo
     :: download the webpage for the logo image
-    cd requesites
-    wget -q --output-document %~dp0/%webinput%logo.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png
-    cd ..
+    %~dp0/requesites/wget -q --output-document %~dp0/%webinput%logo.txt https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png
     for %%i in ("%webinput%logo.txt") do set size=%%~zi
     if %size% equ 0 (
         del %webinput%logo.txt
         echo This game doesn't appear to have a logo image :/
-        goto start
+        goto steamformat
     )
     del %webinput%logo.txt
     
     :: download logo from steam
     curl -s https://steamcdn-a.akamaihd.net/steam/apps/%gameid%/logo.png -o "steamlogo_%gametitle%".jpg
-    echo Downloaded steamlogo_%gametitle%.jpg!
+    %~dp0/requesites/cecho {0A}Downloaded logo as steamlogo_%gametitle%.jpg!{#}{\n}
     goto start
 
 :downloadfail
